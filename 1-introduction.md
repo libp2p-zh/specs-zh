@@ -1,33 +1,33 @@
-1 Introduction
+1 介绍
 ==============
 
-While developing [IPFS, the InterPlanetary FileSystem](https://ipfs.io/), we came to learn about several challenges imposed by having to run a distributed file system on top of heterogeneous devices, with different network setups and capabilities. During this process, we had to revisit the whole network stack and elaborate solutions to overcome the obstacles imposed by design decisions of the several layers and protocols, without breaking compatibility or recreating technologies.
+ 在开发 [IPFS-星际文件系统（去中心化的分布式文件系统）](https://ipfs.io/) 的过程中, 我们了解到在一个网络设备多样，网络结构和功能差异巨大的环境下运行一个分布式文件系统面临不少挑战。在此过程中，我们不得不重新审视整个网络技术栈，去寻求针对现有网络层与协议设计所造成的困难的解决方案，并避免兼容问题或重造轮子。
 
-In order to build this library, we focused on tackling problems independently, creating less complex solutions with powerful abstractions that, when composed, can offer an environment for a peer-to-peer application to work successfully.
+为了开发此库，我们力求独立的解决问题，尽可能不引入复杂的解决方案，保证高度的抽象化，当外部系统集成时，可以提供一个点对点应用可用的运行环境。
 
-| ⚠️ Warning: parts of this document are incomplete and out of date. Please see [this issue](https://github.com/libp2p/specs/issues/156), and look for deprecation notices throughout. ⚠️ |
+| ⚠️ 警告: 部分内容不全面或已过时。弃用信息详见 [此问题](https://github.com/libp2p/specs/issues/156) ⚠️ |
 | --- |
 
-## 1.1 Motivation
+## 1.1 动因
 
-`libp2p` is the result of our collective experience of building a distributed system, in that it puts responsibility on developers to decide how they want an app to interoperate with others in the network, and favors configuration and extensibility instead of making assumptions about the network setup.
+`libp2p` 是我们开发分布式系统经验的结晶，开发者自行决定他们开发的程序如何在网络进行交互，提倡可配置性与可拓展性而非对网络结构进行假设。
 
-In essence, a peer using `libp2p` should be able to communicate with another peer using a variety of different transports, including connection relay, and talk over different protocols, negotiated on demand.
+本质上，一个使用 `libp2p` 的节点可以与其他节点用很多传输方式进行通信，包括连接中继，与按需使用其他各类网络协议。
 
-## 1.2 Goals
+## 1.2 目标
 
-Our goals for the `libp2p` specification and its implementations are:
+我们对 `libp2p` 规范与实现的目标是：
 
-  - Enable the use of various:
-    - transports: TCP, UDP, SCTP, UDT, uTP, QUIC, SSH, etc.
-    - authenticated transports: TLS, DTLS, CurveCP, SSH
-  - Make efficient use of sockets (connection reuse)
-  - Enable communications between peers to be multiplexed over one socket (avoiding handshake overhead)
-  - Enable multiprotocols and respective versions to be used between peers, using a negotiation process
-  - Be backwards compatible
-  - Work in current systems
-  - Use the full capabilities of current network technologies
-  - Have NAT traversal
-  - Enable connections to be relayed
-  - Enable encrypted channels
-  - Make efficient use of underlying transports (e.g. native stream muxing, native auth, etc.)
+  - 可以使用多种:
+    - 传输协议: TCP, UDP, SCTP, UDT, uTP, QUIC, SSH, etc.
+    - 可信传输: TLS, DTLS, CurveCP, SSH
+  - 充分利用 sockets (连接复用)
+  - 允许在一个 socket 上不同节点间多路复用通信 (避免握手开支)
+  - 允许节点间多协议类型与不同版本类型通信
+  - 向后兼容
+  - 兼容当前主流分布式网络系统结构
+  - 充分利用当前网络技术
+  - NAT 穿透
+  - 允许连接被转发
+  - 允许信道加密
+  - 有效利用底层传输 (如原生流的多路复用，原生认证功能等)
