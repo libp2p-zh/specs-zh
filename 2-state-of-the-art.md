@@ -76,5 +76,4 @@
 
 虽然我们目前有一整套服务通信的协议，但丰富与多样本身会产生其问题。目前，应用程序难以保证在不同种传输协议下的可用性（如，浏览器应用中缺少 TCP/UDP 的支持）
 
-There is also no 'presence linking', meaning that there isn't a notion for a peer to announce itself in several transports, so that other peers can guarantee that it is always the same peer.
 现在也没有“存在链接”，这意味着一个节点并不能在不同传输层中来保证自己可已被发现，因此其他节点也就没办法保证本节点的唯一性<sup>译者注：其他节点无法知道连接的节点是否是之前的节点</sup>。
