@@ -1,63 +1,63 @@
-2 An analysis of the state of the art in network stacks
+2 前沿网络层技术栈分析
 ====================================================
 
-This section presents to the reader an analysis of the available protocols and architectures for network stacks. The goal is to provide the foundations from which to infer the conclusions and understand why `libp2p` has the requirements and architecture that it has.
+这一章分析了现有可用的网络技术栈协议与架构。旨在为读者提供`libp2p`的理论基础和理解协议要求和架构背后的逻辑。
 
-## 2.1 The client-server model
+## 2.1 客户端-服务端模型
 
-The client-server model indicates that both parties at the ends of the channel have different roles, that they support different services and/or have different capabilities, or in other words, that they speak different protocols.
+客户端-服务端模型表明连接的两端作为不同的角色，他们支持不同的服务、具备不同的特性，也就是他们使用不同的协议。
 
-Building client-server applications has been the natural tendency for a number of reasons:
+下述所列几点原因说明为什么`服务端-客户端`模型的应用是主流：
 
-- The bandwidth inside a data center is considerably higher than that available for clients to connect to each other.
-- Data center resources are considerably cheaper, due to efficient usage and bulk stocking.
-- It makes it easier for the developer and system admin to have fine grained control over the application.
-- It reduces the number of heterogeneous systems to be handled (although the number is still considerable).
-- Systems like NAT make it really hard for client machines to find and talk with each other, forcing a developer to perform very clever hacks to traverse these obstacles.
-- Protocols started to be designed with the assumption that a developer will create a client-server application from the start.
+- 数据中心的带宽远大于客户端间的带宽。
+- 由于高利用率和大量资源累积，数据中心的资源性价比更高。
+- 开发者和系统管理员可细粒度控制应用程序。
+- 降低异构系统的数量（虽然数目仍然庞大）。
+- 客户端难以在 NAT 网络中寻找到对方进行通信，这迫使开发者使用一些 hack 来解决 NAT 穿透问题。
+- 协议涉及之初就嘉定程序员将会开发`服务端-客户端`模型的应用。
 
-We even learned how to hide all the complexity of a distributed system behind gateways on the Internet, using protocols that were designed to perform a point-to-point operation, such as HTTP, making it opaque for the application to see and understand the cascade of service calls made for each request.
+由于此模型，我们甚至开发出一种将所有复杂的分布式系统挡在防火墙后的范式，接着使用点对点操作的协议（如 HTTP）来让应用的请求看起来并没有后面一连串的服务调用。
 
-`libp2p` offers a move towards dialer-listener interactions, from the client-server listener, where it is not implicit which of the entities, dialer or listener, has which capabilities or is enabled to perform which actions. Setting up a connection between two applications today is a multilayered problem to solve, and these connections should not have a purpose bias, and should instead support several other protocols to work on top of the established connection. In a client-server model, a server sending data without a prior request from the client is known as a push model, which typically adds more complexity; in a dialer-listener model in comparison, both entities can perform requests independently.
+`libp2p`从`服务端-客户端`模型向`拨号端-侦听端`模型转变，其中拨号端或侦听端都能具各自的有所有功能和操作。当前在两个应用程序之间建立连接是一个多层级的问题，这些连接不应该有目的的差别<sup>译者注：如不同的 HTTP 请求目的并不相同</sup>，而应该同时复用已有连接来支持其他协议。在`服务端-客户端`模型中，服务端在没有来自客户端的先前请求的情况下发送数据被称为推送模型，其通常增加了更多复杂性; 相比之下，在`拨号端-侦听端`模型中，两个实体都可以独立地执行请求。
 
-## 2.2 Categorizing the network stack protocols by solutions
+## 2.2 按解决方案对网络技术栈协议分类
 
-Before diving into the `libp2p` protocols, it is important to understand the large diversity of protocols already in wide use and deployment that help maintain today's simple abstractions. For example, when one thinks about an HTTP connection, one might naively just think that HTTP/TCP/IP are the main protocols involved, but in reality many more protocols participate, depending on the usage, the networks involved, and so on. Protocols like DNS, DHCP(v6), ARP, NDISC, OSPF, Ethernet, 802.11 (Wi-Fi) and many others get involved. Looking inside ISPs' own networks would reveal dozens more.
+在深入研究`libp2p`协议之前，了解已广泛使用和部署的各种协议有助于理解现在简洁的抽象层级。如，当人们考虑 HTTP 连接时，人们可能会天真地认为 HTTP / TCP / IP 是所涉及的主要协议，但实际上其中有更多的协议，具体取决于使用情况，涉及的网络等等。DNS，DHCP(v6)，ARP，NDISC，OSPF，以太网，802.11(Wi-Fi) 等许多协议都有涉及到。而 ISP 内部网络将会发现更多在用协议。
 
-Additionally, it's worth noting that the traditional 7-layer OSI model characterization does not fit `libp2p`. Instead, we categorize protocols based on their role, i.e. the problem they solve. The upper layers of the OSI model are geared towards point-to-point links between applications, whereas the `libp2p` protocols speak more towards various sizes of networks, with various properties, under various different security models. Different `libp2p` protocols can have the same role (in the OSI model, this would be "address the same layer"), meaning that multiple protocols can run simultaneously, all addressing one role (instead of one-protocol-per-layer in traditional OSI stacking). For example, bootstrap lists, mDNS, DHT discovery, and PEX are all forms of the role "Peer Discovery"; they can coexist and even synergize.
+此外，需要注意传统的7层 OSI 模型并不适合`libp2p`。相反，其更适合根据协议的角色对来进行分类，即他们解决的问题。如果套用 OSI 模型，即上层来作为面向应用程序之间的点对点连接，而`libp2p`协议是在各种不同的安全模型下，针对各种大小网络，具有不同属性的连接与使用。不同的`libp2p`协议可以具有相同的角色（在 OSI 模型中，也就是“同一层”），这意味着多个协议可以同时运行，所有归于这个角色（而不是 OSI 里每个层的一个协议）。例如，引导列表，mDNS，DHT 发现和 PEX 都是归于“节点发现”的这个角色;它们可以共存甚至协同作用。
 
-### 2.2.1 Establishing the physical link
+### 2.2.1 物理硬件连接
 
-- Ethernet
+- 以太网 Ethernet
 - Wi-Fi
-- Bluetooth
-- USB
+- 蓝牙 Bluetooth
+- 串行接口 USB
 
-### 2.2.2 Addressing a machine or process
+### 2.2.2 硬件寻址
 
 - IPv4
 - IPv6
-- Hidden addressing, like SDP
+- 隐藏寻址（如 SDP）
 
-### 2.2.3 Discovering other peers or services
+### 2.2.3 节点或服务发现
 
-- ARP
+- 地址解析协议 ARP
 - NDISC
-- DHCP(v6)
-- DNS
-- Onion
+- 动态主机设置协议 v6 DHCP(v6)
+- 域名系统 DNS
+- 洋葱网络 Onion
 
-### 2.2.4 Routing messages through the network
+### 2.2.4 通过网络路由信息
 
 - RIP(1, 2)
-- OSPF
-- BGP
-- PPP
-- Tor
-- I2P
+- 开放式最短路径 OSPF
+- 边界闸道协议 BGP
+- 点对点协议 PPP
+- 洋葱路由 Tor
+- 隐形网络 I2P
 - cjdns
 
-### 2.2.5 Transport
+### 2.2.5 传输协议
 
 - TCP
 - UDP
@@ -65,15 +65,16 @@ Additionally, it's worth noting that the traditional 7-layer OSI model character
 - QUIC
 - WebRTC data channel
 
-### 2.2.6 Agreed semantics for applications to talk to each other
+### 2.2.6 应用程序间服务通讯协议
 
 - RMI
 - Remoting
 - RPC
 - HTTP
 
-## 2.3 Current shortcomings
+## 2.3 当前网络技术栈瓶颈
 
-Although we currently have a panoply of protocols available for our services to communicate, the abundance and variety of solutions creates its own problems. It is currently difficult for an application to be able to support and be available through several transports (e.g. the lack of TCP/UDP stack in browser applications).
+虽然我们目前有一整套服务通信的协议，但丰富与多样本身会产生其问题。目前，应用程序难以保证在不同种传输协议下的可用性（如，浏览器应用中缺少 TCP/UDP 的支持）
 
 There is also no 'presence linking', meaning that there isn't a notion for a peer to announce itself in several transports, so that other peers can guarantee that it is always the same peer.
+现在也没有“存在链接”，这意味着一个节点并不能在不同传输层中来保证自己可已被发现，因此其他节点也就没办法保证本节点的唯一性<sup>译者注：其他节点无法知道连接的节点是否是之前的节点</sup>。
